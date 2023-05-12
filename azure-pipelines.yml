@@ -3,7 +3,7 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- main
+- master
 
 resources:
 - repo: self
@@ -19,28 +19,28 @@ stages: # step 1
   - job: Build # step 2
     displayName: Build
     pool:
-      # vmImage: ubuntu-latest
-      name: Default
+       vmImage: ubuntu-latest
+      #name: Default
     steps: # step 3
     - task: Docker@2
       inputs:
-        containerRegistry: 'Docker hub'
-        repository: 'rafaelenrike/utbapp'
+        containerRegistry: 'Docker Hub'
+        repository: 'hdzr24/infra'
         command: 'buildAndPush'
         Dockerfile: '**/Dockerfile'
         tags: |
           $(tag)
 - stage: Provision
-  displayName: 'Creating terraform on Azure'
+  displayName: 'Creating terraform on AWS'
   dependsOn: Build
   jobs:
     - job : provision
       displayName: 'Provision container instance'
       pool:
-        # vmImage: ubuntu-latest
-        name: Default
+         vmImage: ubuntu-latest
+        #name: Default
       variables: # vars from azure devOps in library
-      - group: azure
+      - group: aws
       steps:
         - script: |
             set -e 
@@ -50,8 +50,12 @@ stages: # step 1
           name: 'RunTerraform'
           displayName: 'Run Terraform'
           env: # these vars are being passed from our SampleAPIVariables that we specified in Azure DevOps
-            ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-            ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-            ARM_TENANT_ID: $(ARM_TENANT_ID)
-            ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+            AWS_ACCESS_KEY_ID: $(AWS_ACCESS_KEY_ID)
+            AWS_SECRET_ACCESS_KEY: $(AWS_SECRET_ACCESS_KEY)
+            AWS_DEFAULT_REGION: 'us-east-1'
+            TF_BACKEND_BUCKET: 'terraform-state-bucket-1'
             TF_VAR_imagebuild: $(tag)
+            TF_VAR_region: 'us-east-1'
+            
+
+
